@@ -414,7 +414,7 @@ class CustomerGroupRevenueShareTests(unittest.TestCase):
     def test_full_main_pipeline_writes_customer_group_revenue_amount(self):
         rule_text = """# Rulebook
 | Đơn tính vào doanh thu | đơn không huỷ và không trả hàng. Đơn có trả hàng, kể cả chỉ trả một phần, bỏ cả đơn. Đơn đang giao vẫn tính |
-| Bán được bao nhiêu tiền, thu về bao nhiêu tiền | là doanh thu theo mục này, không phải amount collected |
+| Bán được bao nhiêu tiền, thu về bao nhiêu tiền | là doanh thu theo mục này, không phải tiền khách đã trả |
 | Đơn thuộc kỳ nào | theo ngày đặt, không theo ngày giao hay ngày thu tiền |
 | Doanh thu một đơn | tổng thành tiền các dòng hàng (đã trừ giảm giá trên từng dòng) |
 | Hai dòng của cùng một đơn giống nhau ở mọi ô | lỗi xuất file, tính một lần |
@@ -454,7 +454,7 @@ class CustomerGroupRevenueShareTests(unittest.TestCase):
                     "business_id": "biz_129",
                     "question": "Cho tôi biết doanh thu các đơn của khách nhóm thân thiết tháng 10/2025.",
                     "as_of_date": "2026-08-14",
-                }, ensure_ascii=False) + "\\n",
+                }, ensure_ascii=False) + "\n",
                 encoding="utf-8",
             )
             output = root / "answers.jsonl"

@@ -6,7 +6,7 @@ revenue semantics for this query family.
 """
 from dataclasses import replace
 from datetime import date
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import Decimal
 from pathlib import PurePosixPath
 
 from .join_contracts import build_fact_join_contract
@@ -214,9 +214,6 @@ def execute_customer_group_revenue_total(tables, rules, start, end, customer_gro
 
     if eligible_rows == 0 or denominator <= 0:
         return None, "no_eligible_revenue"
-    percentage = (numerator * Decimal(100) / denominator).quantize(
-        Decimal("0.01"), rounding=ROUND_HALF_UP
-    )
     return {
         "type": "number",
         "answer": float(numerator),
