@@ -129,7 +129,10 @@ class CustomerGroupRevenueShareTests(unittest.TestCase):
         for question in questions:
             with self.subTest(question=question):
                 spec = planner.interpret(question, "2026-08-14", "biz_129")
-                self.assertFalse(spec.executable)
+                self.assertEqual(spec.intent, "customer_group_revenue_total")
+                self.assertTrue(spec.executable)
+                self.assertEqual(dict(spec.filters)["customer_group"], "thân thiết")
+                self.assertEqual(spec.unit, "VND")
 
     def test_other_businesses_cannot_enable_this_contest_specific_query_family(self):
         planner = RulePlanner(split_rules=self.rules)
@@ -419,6 +422,7 @@ class CustomerGroupRevenueShareTests(unittest.TestCase):
 | Doanh thu một đơn | tổng thành tiền các dòng hàng (đã trừ giảm giá trên từng dòng) |
 | Hai dòng của cùng một đơn giống nhau ở mọi ô | lỗi xuất file, tính một lần |
 | Bán chạy | theo số lượng quy về đơn vị cơ bản |
+| Tỉ lệ đơn huỷ trong kỳ | phần trăm đơn huỷ trong mọi đơn đặt trong kỳ |
 - Bằng nhau: hai đối tượng bằng nhau ở tiêu chí câu hỏi thì xếp theo mã tăng dần (không có mã thì theo tên).
 """
         with tempfile.TemporaryDirectory() as directory:
