@@ -20,7 +20,7 @@ class RulePlanner:
     EXECUTABLE = {
         "revenue", "collected_amount", "quantity", "order_count", "cancellation_rate",
         "sales_ranking", "daily_revenue_threshold_count", "order_revenue_threshold_count",
-        "customer_group_revenue_share",
+        "customer_group_revenue_share", "customer_group_revenue_total",
     }
     RANKING_INTENTS = {
         "sales_ranking", "customer_ranking", "debt_ranking", "period_ranking",
@@ -307,6 +307,7 @@ class RulePlanner:
         customer_group = RulePlanner._customer_group_filter(question)
         group_revenue_cue = any(term in q for term in (
             "doanh thu", "doanh so", "dthu", "revenue", "tien ban",
+            "tien hang", "total",
         ))
         group_share_cue = any(term in q for term in (
             "chiem", "dong gop", "ti trong", "ty trong", "co cau",
@@ -314,6 +315,8 @@ class RulePlanner:
         ))
         if customer_group and group_revenue_cue and group_share_cue:
             return "customer_group_revenue_share", ("customer_group",), "customer_group_revenue_share"
+        if customer_group and group_revenue_cue:
+            return "customer_group_revenue_total", ("customer_group",), "customer_group_revenue_total"
 
         day_question = re.search(r"\bngay nao(?:f)?\b", q)
         if day_question and any(term in q for term in ("tien", "doanh thu", "doanh so", "dthu", "revenue", "ban duoc")) and ranking:
@@ -451,7 +454,7 @@ class RulePlanner:
         explicit_entity_filter = self._has_unresolved_entity_filter(question)
         customer_group_filter = (
             self._customer_group_filter(question)
-            if intent == "customer_group_revenue_share" else None
+            if intent in {"customer_group_revenue_share", "customer_group_revenue_total"} else None
         )
         unresolved_entity = entity_ambiguous or (
             explicit_entity_filter and entity is None and customer_group_filter is None
@@ -465,7 +468,7 @@ class RulePlanner:
         executable = (
             intent in self.EXECUTABLE
             and scope.kind == "period"
-            and (intent != "customer_group_revenue_share" or business_id == "biz_129")
+            and (intent not in {"customer_group_revenue_share", "customer_group_revenue_total"} or business_id == "biz_129")
             and not unresolved_entity
             and not unsupported_breakdown
             and not unsupported_monthly_output
@@ -507,6 +510,7 @@ class RulePlanner:
             filters=filters,
             unit=(
                 "percent" if intent == "customer_group_revenue_share"
+                else "VND" if intent == "customer_group_revenue_total"
                 else self._explicit_unit(question)
             ),
             sort=SortSpec(metric, "desc") if intent in self.RANKING_INTENTS else None,

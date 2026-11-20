@@ -3,6 +3,7 @@ from decimal import Decimal, ROUND_HALF_UP
 from functools import lru_cache
 
 from .customer_group_revenue import execute_customer_group_revenue_share
+from .customer_group_revenue_total import execute_customer_group_revenue_total
 from .normalization import infer_decimal_separator, parse_date, parse_decimal
 from .normalise import fold, tokens
 from .rules import classify_order_status, classify_payment_status
@@ -1215,6 +1216,32 @@ class Executor:
         }
         return candidate, reason_codes.get(reason, reason)
 
+    def _customer_group_revenue_total(self, plan):
+        try:
+            filters = dict(plan.filters)
+        except (TypeError, ValueError):
+            return None, "ambiguous_entity"
+        candidate, reason = execute_customer_group_revenue_total(
+            self.tables, self.rules, plan.start, plan.end,
+            filters.get("customer_group"),
+        )
+        reason_codes = {
+            "unresolved_filter": "ambiguous_entity",
+            "temporal_scope_not_executable": "missing_time_range",
+            "source_scope_mismatch": "join_unsafe",
+            "missing_required_fields": "missing_column",
+            "relationship_not_validated": "join_unsafe",
+            "join_contract_invalid": "join_unsafe",
+            "join_execution_failed": "join_unsafe",
+            "join_result_incomplete": "insufficient_evidence",
+            "malformed_fact_row": "parse_failure",
+            "invalid_order_date": "parse_failure",
+            "unverified_order_status": "unknown_order_status",
+            "invalid_revenue_amount": "parse_failure",
+            "no_eligible_revenue": "no_data",
+        }
+        return candidate, reason_codes.get(reason, reason)
+
     def execute_with_reason(self, plan, question, *, spec=None):
         """Run the allowlisted executor and return an internal abstention reason."""
         if plan is None:
@@ -1225,6 +1252,12 @@ class Executor:
             if spec.unit != "percent":
                 return None, "invalid_unit"
             return self._customer_group_revenue_share(plan)
+        if plan.intent == "customer_group_revenue_total":
+            if spec is None or spec.business_id != "biz_129":
+                return None, "unsupported_intent"
+            if fold(spec.unit) != "vnd":
+                return None, "invalid_unit"
+            return self._customer_group_revenue_total(plan)
         if plan.intent in {"revenue", "order_revenue_threshold_count"} and not self.rules.revenue_supported:
             return None, "rulebook_unavailable"
         if spec is not None and spec.unit and plan.intent in ("revenue", "collected_amount", "order_revenue_threshold_count") and fold(spec.unit) != "vnd":

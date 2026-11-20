@@ -66,6 +66,7 @@ def verify_with_reason(question_id, candidate, plan, *, spec=None, error=None, e
         "order_count": "number",
         "cancellation_rate": "percent",
         "customer_group_revenue_share": "percent",
+        "customer_group_revenue_total": "number",
         "daily_revenue_threshold_count": "number",
         "order_revenue_threshold_count": "number",
     }.get(plan.intent)

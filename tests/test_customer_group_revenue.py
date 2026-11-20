@@ -6,6 +6,7 @@ from dataclasses import replace
 from pathlib import Path
 
 from datamate.customer_group_revenue import execute_customer_group_revenue_share
+from datamate.customer_group_revenue_total import execute_customer_group_revenue_total
 from datamate.main import run
 from datamate.metrics import Executor
 from datamate.split_rules import SplitRules
@@ -374,6 +375,40 @@ class CustomerGroupRevenueShareTests(unittest.TestCase):
         candidate, reason = self.run_query(rules=rules)
         self.assertIsNone(candidate)
         self.assertEqual(reason, "rulebook_unavailable")
+
+
+    def test_customer_group_revenue_total_returns_only_the_requested_group(self):
+        candidate, reason = execute_customer_group_revenue_total(
+            self.tables, self.rules, "2025-10-01", "2025-10-31", "thân thiết"
+        )
+        self.assertIsNone(reason)
+        self.assertEqual(candidate["type"], "number")
+        self.assertEqual(candidate["answer"], 80000.0)
+
+    def test_exact_contest_group_revenue_total_questions_are_executable(self):
+        planner = RulePlanner(split_rules=self.rules)
+        questions = (
+            "tháng 3/2025, các khách thuoocj nhóm thân thiết mua total bao nhieeu tiền hàng",
+            "Cho tôi biết doanh thu các đơn của khách nhóm thân thiết tháng 6/2025.",
+        )
+        for question in questions:
+            with self.subTest(question=question):
+                spec = planner.interpret(question, "2026-08-14", "biz_129")
+                self.assertEqual(spec.intent, "customer_group_revenue_total")
+                self.assertTrue(spec.executable)
+                self.assertEqual(dict(spec.filters)["customer_group"], "thân thiết")
+                self.assertEqual(spec.unit, "VND")
+                self.assertEqual(planner.plan(question, "2026-08-14", "biz_129").intent,
+                                 "customer_group_revenue_total")
+
+    def test_customer_group_revenue_total_is_scoped_to_biz_129(self):
+        planner = RulePlanner(split_rules=self.rules)
+        question = "Doanh thu khách nhóm thân thiết tháng 6/2025"
+        spec = planner.interpret(question, "2026-08-14", "biz_other")
+        self.assertEqual(spec.intent, "customer_group_revenue_total")
+        self.assertFalse(spec.executable)
+        self.assertIsNone(planner.plan(question, "2026-08-14", "biz_other"))
+
 
 
 if __name__ == "__main__":
