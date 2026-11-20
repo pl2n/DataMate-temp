@@ -411,5 +411,63 @@ class CustomerGroupRevenueShareTests(unittest.TestCase):
 
 
 
+    def test_full_main_pipeline_writes_customer_group_revenue_amount(self):
+        rule_text = """# Rulebook
+| Đơn tính vào doanh thu | đơn không huỷ và không trả hàng. Đơn có trả hàng, kể cả chỉ trả một phần, bỏ cả đơn. Đơn đang giao vẫn tính |
+| Bán được bao nhiêu tiền, thu về bao nhiêu tiền | là doanh thu theo mục này, không phải amount collected |
+| Đơn thuộc kỳ nào | theo ngày đặt, không theo ngày giao hay ngày thu tiền |
+| Doanh thu một đơn | tổng thành tiền các dòng hàng (đã trừ giảm giá trên từng dòng) |
+| Hai dòng của cùng một đơn giống nhau ở mọi ô | lỗi xuất file, tính một lần |
+| Bán chạy | theo số lượng quy về đơn vị cơ bản |
+- Bằng nhau: hai đối tượng bằng nhau ở tiêu chí câu hỏi thì xếp theo mã tăng dần (không có mã thì theo tên).
+"""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            data = root / "data" / "biz_129"
+            data.mkdir(parents=True)
+            sources = {
+                "chi_tiet_don.csv": (
+                    ["Số CT", "Mã hàng bán", "Tiền bán"],
+                    [["ORD1", "SP1", "50000"], ["ORD1", "SP2", "30000"],
+                     ["ORD2", "SP1", "100000"], ["ORD3", "SP2", "20000"]],
+                ),
+                "don_hang.csv": (
+                    ["Số phiếu", "Mã khách mua", "Ngày bán", "Tình trạng đơn"],
+                    [["ORD1", "KH1", "2025-10-01", "completed"],
+                     ["ORD2", "", "2025-10-02", "completed"],
+                     ["ORD3", "KH2", "2025-10-03", "returned"]],
+                ),
+                "khach_hang.csv": (
+                    ["Mã khách lẻ/sỉ", "Nhóm"],
+                    [["KH1", "thân thiết"], ["KH2", "sỉ"]],
+                ),
+            }
+            for filename, (headers, rows) in sources.items():
+                with (data / filename).open("w", encoding="utf-8", newline="") as handle:
+                    writer = csv.writer(handle)
+                    writer.writerow(headers)
+                    writer.writerows(rows)
+            (root / "rulebook.md").write_text(rule_text, encoding="utf-8")
+            (root / "questions.jsonl").write_text(
+                json.dumps({
+                    "id": "q_group_total",
+                    "business_id": "biz_129",
+                    "question": "Cho tôi biết doanh thu các đơn của khách nhóm thân thiết tháng 10/2025.",
+                    "as_of_date": "2026-08-14",
+                }, ensure_ascii=False) + "\\n",
+                encoding="utf-8",
+            )
+            output = root / "answers.jsonl"
+            run(root, output, log_directory=root / "logs")
+            record = json.loads(output.read_text(encoding="utf-8").strip())
+
+        self.assertEqual(record, {
+            "id": "q_group_total",
+            "type": "number",
+            "answer": 80000.0,
+        })
+
+
+
 if __name__ == "__main__":
     unittest.main()

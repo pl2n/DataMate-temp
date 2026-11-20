@@ -389,3 +389,14 @@ CI is still unverified: GitHub queries returned no workflow runs/statuses for th
 - Branch tip: `0cd8fb90fe0c197752f84b847537763b09217e2c`.
 - Actions run `44594377793` on the exact branch tip: **352 tests passed**.
 - PR #2 remains open as a draft, mergeable, and unmerged. The customer-group revenue-share slice for biz_129 is ready for user review; do not merge without instruction.
+
+
+## 2026-11-20 — customer-group revenue total
+
+- Upstream PR #3 merged the query-scoped LEFT JOIN and `customer_group_revenue_share` implementation at `92405f26805d0e9f8842b094792e94568cd706f7`.
+- New fork branch: `feature/customer-group-revenue-total`, based exactly on that merge commit.
+- Added a separate `customer_group_revenue_total` intent for Contest `biz_129`. It returns the requested group's eligible net sales-line revenue as a numeric money amount, not a percentage.
+- The implementation reuses the exact three source roles and two-hop non-fanout LEFT JOIN contract. Guest orders stay outside the requested group total; cancelled/returned orders are excluded in full; in-transit orders remain eligible; exact duplicate detail rows are counted once.
+- Contest prompts: `q_635440e343cc` and `q_d361c00c6829`. The typo `thuoocj` remains parseable because the group phrase `nhóm thân thiết` is still present.
+- Added planner, executor, biz_129 scope, output-type, and full `main.run` synthetic integration tests.
+- This work remains on the fork. Do not open a PR until the full feature and exact-head CI validation are complete.

@@ -247,3 +247,13 @@ Next: audit public-test questions against the 14 input shapes, then build minima
 - Branch tip: `0cd8fb90fe0c197752f84b847537763b09217e2c`.
 - GitHub Actions run `44594377793` on that exact tip: **352 tests passed**.
 - PR #2 remains open, draft, mergeable, and unmerged.
+
+
+## 2026-11-20 — customer-group revenue total
+
+- PR #3 merged to upstream main at `92405f26805d0e9f8842b094792e94568cd706f7`; query-specific LEFT JOIN and revenue-share support are now upstream.
+- Created `feature/customer-group-revenue-total` on `pl2n/DataMate-temp` from that merge commit.
+- Added a separate allowlisted `customer_group_revenue_total` query family for `biz_129`. It sums eligible net sales-line amounts only for the requested customer group; guests are not attributed to a group.
+- Preserves the reviewed detail → order → customer LEFT JOIN, order-date period, full cancelled/returned order exclusion, in-transit inclusion, duplicate-line deduplication, and payment-event separation.
+- Added planner/executor/scope/integration tests and `docs/CUSTOMER_GROUP_REVENUE_TOTAL.md`.
+- No PR has been opened. CI is not yet confirmed for the current branch head.
